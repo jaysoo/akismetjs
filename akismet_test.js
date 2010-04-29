@@ -7,4 +7,8 @@ var a = new akismet.Akismet({
 	blog: 'http://www.example.com/'
 });
 
-sys.puts(a.verifyKey());
+a.call('verifyKey', {},
+ 	function(data) {
+     	sys.puts(data);
+	}
+);

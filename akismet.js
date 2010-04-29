@@ -25,11 +25,13 @@ akismet.Akismet = function(options) {
 				methodName: 'verify-key',
 				url: _baseUrl,
 				requires: [],
-				callback: function(data) {
-					return data != 'invalid';
+				callback: function(data, callback) {
+					callback(data != 'invalid');
 				}
 			}
-		}
+		},
+
+		self = this
 
 		;
 
@@ -47,8 +49,8 @@ akismet.Akismet = function(options) {
 
 	// Make each method callable
 	for (var k in _methods) {
-     	this[k] = function(params) {
-          	call(k, params);
+     	self[k] = function(params) {
+          	self.call(k, params);
 		};
 	}
 
@@ -56,8 +58,9 @@ akismet.Akismet = function(options) {
 	 * Akismet API call
 	 * See: http://akismet.com/development/api/
 	 */ 
-	function call(name, params) {
+	this.call = function(name, params, callback) {
 		if (!_key || !_blog) throw new akismet.AkismetError('Akismet API key  or blog URL not set');
+		if (!_methods[name]) throw new akismet.AkismetError('Method not found: ' + name);
 
 		var m = _methods[name],
 			path = _getPath(m.methodName)
@@ -75,8 +78,10 @@ akismet.Akismet = function(options) {
 			}
 		}
 
-		_fetchUrl(m.url, path, params, m.callback);
-	}
+		_fetchUrl(m.url, path, params, function(data) { 
+			m.callback(data, callback);
+		});
+	};
 
 	/*
 	 * Returns the URL for our webservice calls
@@ -98,16 +103,20 @@ akismet.Akismet = function(options) {
 			request = client .request('POST', path, {
 				host: host,
 				'Content-Length': toWrite.length
-			})
+			}),
+			data = []
 			;
 
 		request.addListener('response', function (response) {
 		  response.setEncoding('utf8');
 		  response.addListener('data', function (chunk) {
-			  callback(chunk);
+			  data.push(chunk);
+		  });
+		  response.addListener('data', function (chunk) {
+			  callback(data.join(''));
 		  });
 		});
-
+		
 		request.write(toWrite);
 		request.end();
 	}
