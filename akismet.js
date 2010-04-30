@@ -11,7 +11,8 @@ var VERSION = '0.1',
 	;
 
 akismet.Akismet = function(options) {
-	var _baseUrl = 'rest.akismet.com',
+	var self = this,
+        _baseUrl = 'rest.akismet.com',
 		_apiVersion = '1.1',
 		_key,
 		_blog,
@@ -51,21 +52,10 @@ akismet.Akismet = function(options) {
                     // nothing?
                 }
             }
-		},
-
-		self = this
-
+		}
 		;
-
-	self.setOptions = function(o) {
-		_key = o.key;
-		_blog = o.blog;
-		_userAgent = o.userAgent;
-	};
 	
-	if (options) {
-		self.setOptions(options);
-	}
+	if (options) setOptions(options);
 
 	_userAgent = (_userAgent || DEFAULT_APP + '/' +  VERSION) + ' | ' + PLUGIN + '/' + VERSION
 
@@ -78,11 +68,21 @@ akismet.Akismet = function(options) {
         })(k);
 	}
 
+    /*
+     * @param {hash} o 
+     */
+	self.setOptions = function(o) {
+        setOptions(o);
+	};
+
 	/* 
 	 * Akismet API call
 	 * See: http://akismet.com/development/api/
+     *
+     * @param {string} name
+     * @param {hash} params
 	 */ 
-	this.call = function(name, params) {
+	self.call = function(name, params) {
 		if (!_key || !_blog) throw new Error('Akismet API key  or blog URL not set');
 		if (!_methods[name]) throw new Error('Method not found: ' + name);
 
@@ -107,20 +107,36 @@ akismet.Akismet = function(options) {
 
 	};
 
+    /*
+     * @param {hash} o
+     */
+    function setOptions(o) {
+		_key = o.key;
+		_blog = o.blog;
+		_userAgent = o.userAgent;
+    }
+
 	/*
-	 * Returns the URL for our webservice calls
+	 * @return the URL for our webservice calls
 	 */
 	function _getUrlWithKey() {
 		return [_key, _baseUrl].join('.');
 	}
 
 	/*
-	 * Returns a HTTP path corresponding to the name of the API call 
+     * @param {string} methodName
+	 * @return a HTTP path corresponding to the name of the API call 
 	 */
 	function _getPath(methodName) {
      	return ['', _apiVersion, methodName].join('/');
 	}
 
+    /*
+     * @param {string} host
+     * @param {string} path
+     * @param {hash} params
+     * @param {function} callback
+     */
 	function _fetchUrl(host, path, params, callback) {
 		var client = http.createClient(80, host),
             postBody = querystring.stringify(params),

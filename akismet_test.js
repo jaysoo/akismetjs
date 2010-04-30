@@ -37,9 +37,10 @@ client.addListener('response', function(spam) {
     assert.ok(spam, 'This should be marked as spam');
 });
 client.commentCheck({
-    'user_ip': '22.192.26.123', // Known spam IP
-    'comment_type': 'comment',
-    'comment_author': 'jzdgoisge',
-    'comment_author_url': 'http://vjiowrtmikay.com/',
-    'comment_content': 'hUYDrb kwbvfsmqumfi, [url=http://fvgxzuvgnfke.com/]fvgxzuvgnfke[/url], [link=http://yqqkrjzyyhtg.com/]yqqkrjzyyhtg[/link], http://sfnhmnbpsxbr.com/'
+    user_ip: '22.192.26.123', // Known spam IP
+    comment_type: 'comment',
+    comment_author: 'jzdgoisge',
+    comment_author_url: 'http://vjiowrtmikay.com/',
+    comment_content: 'hUYDrb kwbvfsmqumfi, [url=http://fvgxzuvgnfke.com/]fvgxzuvgnfke[/url], [link=http://yqqkrjzyyhtg.com/]yqqkrjzyyhtg[/link], http://sfnhmnbpsxbr.com/'
 });
+
