@@ -3,7 +3,7 @@ var akismet = require('./akismet'),
 	;
 
 var a = new akismet.Akismet({
-   	key: 'fake',
+   	key: 'some_key',
 	blog: 'http://www.example.com/'
 });
 

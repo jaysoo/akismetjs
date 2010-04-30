@@ -5,7 +5,8 @@ var sys = require('sys'),
 	;
 
 var VERSION = '0.1',
-	DEFAULT_AGENT = 'akismetjs',
+    PLUGIN = 'akismetjs',
+	DEFAULT_APP = 'Akismet for Node.js',
 	akismet = exports
 	;
 
@@ -42,7 +43,7 @@ akismet.Akismet = function(options) {
 		self.setOptions(options);
 	}
 
-	if (_userAgent) _userAgent = [DEFAULT_AGENT, VERSION].join('/');
+	_userAgent = (_userAgent || DEFAULT_APP + '/' +  VERSION) + ' | ' + PLUGIN + '/' + VERSION
 
 	// Make each method callable
 	for (var k in _methods) {
@@ -94,10 +95,12 @@ akismet.Akismet = function(options) {
 
 	function _fetchUrl(host, path, params, callback) {
 		var client = http.createClient(80, host),
-			toWrite = querystring.stringify(params),
-			request = client .request('POST', path, {
-				host: host,
-				'Content-Length': toWrite.length
+            postBody = querystring.stringify(params),
+			request = client.request('POST', path, {
+				'host': host,
+                'User-Agent': _userAgent,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': postBody.length
 			}),
 			data = []
 			;
@@ -108,11 +111,12 @@ akismet.Akismet = function(options) {
                 data.push(chunk);
             });
             response.addListener('data', function () {
+                //for (var k in response.headers) sys.puts([k, response.headers[k]].join('='));
                 self.emit('response', callback(data.join('')));
             });
         });
 
-		request.write(toWrite);
+        request.write(postBody);
 		request.end();
 	}
 };
