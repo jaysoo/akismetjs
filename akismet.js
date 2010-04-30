@@ -1,16 +1,13 @@
 var sys = require('sys'),
 	http = require('http'),
-	querystring = require('querystring')
+	querystring = require('querystring'),
+    events = require('events')
 	;
 
 var VERSION = '0.1',
 	DEFAULT_AGENT = 'akismetjs',
 	akismet = exports
 	;
-
-akismet.AkismetError = function(msg) {
-	this.getMessage = function() { return msg; };
-};
 
 akismet.Akismet = function(options) {
 	var _baseUrl = 'rest.akismet.com',
@@ -25,8 +22,8 @@ akismet.Akismet = function(options) {
 				methodName: 'verify-key',
 				url: _baseUrl,
 				requires: [],
-				callback: function(data, callback) {
-					callback(data != 'invalid');
+				callback: function(data) {
+					return data != 'invalid';
 				}
 			}
 		},
@@ -35,14 +32,14 @@ akismet.Akismet = function(options) {
 
 		;
 
-	this.setOptions = function(o) {
+	self.setOptions = function(o) {
 		_key = o.key;
 		_blog = o.blog;
 		_userAgent = o.userAgent;
 	};
 	
 	if (options) {
-		this.setOptions(options);
+		self.setOptions(options);
 	}
 
 	if (_userAgent) _userAgent = [DEFAULT_AGENT, VERSION].join('/');
@@ -58,9 +55,9 @@ akismet.Akismet = function(options) {
 	 * Akismet API call
 	 * See: http://akismet.com/development/api/
 	 */ 
-	this.call = function(name, params, callback) {
-		if (!_key || !_blog) throw new akismet.AkismetError('Akismet API key  or blog URL not set');
-		if (!_methods[name]) throw new akismet.AkismetError('Method not found: ' + name);
+	this.call = function(name, params) {
+		if (!_key || !_blog) throw new Error('Akismet API key  or blog URL not set');
+		if (!_methods[name]) throw new Error('Method not found: ' + name);
 
 		var m = _methods[name],
 			path = _getPath(m.methodName)
@@ -74,13 +71,11 @@ akismet.Akismet = function(options) {
 		// Check we have all required keys
 		for (var i=0, key; key = m.requires[i]; i++) {
          	if (!(key in params)) {
-             	throw new akismet.AkismetError('Required key not found for method ' + name + ': ' + key);
+             	throw new Error('Required key not found for method ' + name + ': ' + key);
 			}
 		}
 
-		_fetchUrl(m.url, path, params, function(data) { 
-			m.callback(data, callback);
-		});
+		_fetchUrl(m.url, path, params, m.callback);
 	};
 
 	/*
@@ -107,18 +102,21 @@ akismet.Akismet = function(options) {
 			data = []
 			;
 
-		request.addListener('response', function (response) {
-		  response.setEncoding('utf8');
-		  response.addListener('data', function (chunk) {
-			  data.push(chunk);
-		  });
-		  response.addListener('data', function (chunk) {
-			  callback(data.join(''));
-		  });
-		});
-		
+        request.addListener('response', function (response) {
+            response.setEncoding('utf8');
+            response.addListener('data', function (chunk) {
+                data.push(chunk);
+            });
+            response.addListener('data', function () {
+                self.emit('response', callback(data.join('')));
+            });
+        });
+
 		request.write(toWrite);
 		request.end();
 	}
 };
 
+akismet.create
+
+sys.inherits(akismet.Akismet, events.EventEmitter);
