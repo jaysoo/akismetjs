@@ -21,12 +21,36 @@ akismet.Akismet = function(options) {
 		_methods = {
 			verifyKey: {
 				methodName: 'verify-key',
-				url: _baseUrl,
+                includeKey: false,
 				requires: [],
-				callback: function(data) {
-					return data != 'invalid';
+				callback: function(response, data) {
+					return data == 'valid';
 				}
-			}
+			},
+            commentCheck: {
+                methodName: 'comment-check',
+                includeKey: true,
+                requires: ['user_ip'],
+                callback: function(response, data) {
+                    return data == 'true';
+                }
+            },
+            submitSpam: {
+                methodName: 'submit-spam',
+                includeKey: true,
+                requires: ['user_ip'],
+                callback: function(response, data) {
+                    // nothing?
+                }
+            },
+            submitHam: {
+                methodName: 'submit-ham',
+                includeKey: true,
+                requires: ['user_ip'],
+                callback: function(response, data) {
+                    // nothing?
+                }
+            }
 		},
 
 		self = this
@@ -47,9 +71,11 @@ akismet.Akismet = function(options) {
 
 	// Make each method callable
 	for (var k in _methods) {
-     	self[k] = function(params) {
-          	self.call(k, params);
-		};
+        (function(methodName) {
+            self[methodName] = function(params) {
+                self.call(methodName, params);
+            };
+        })(k);
 	}
 
 	/* 
@@ -61,7 +87,8 @@ akismet.Akismet = function(options) {
 		if (!_methods[name]) throw new Error('Method not found: ' + name);
 
 		var m = _methods[name],
-			path = _getPath(m.methodName)
+			path = _getPath(m.methodName),
+            host = m.includeKey ? _getUrlWithKey() : _baseUrl
 			;
 
 		if (!params) params = {};
@@ -76,7 +103,8 @@ akismet.Akismet = function(options) {
 			}
 		}
 
-		_fetchUrl(m.url, path, params, m.callback);
+		_fetchUrl(host, path, params, m.callback);
+
 	};
 
 	/*
@@ -112,7 +140,7 @@ akismet.Akismet = function(options) {
             });
             response.addListener('data', function () {
                 //for (var k in response.headers) sys.puts([k, response.headers[k]].join('='));
-                self.emit('response', callback(data.join('')));
+                self.emit('response', callback(response, data.join('')));
             });
         });
 
@@ -121,6 +149,8 @@ akismet.Akismet = function(options) {
 	}
 };
 
-akismet.create
+akismet.createClient = function(options) {
+    return new akismet.Akismet(options);
+};
 
 sys.inherits(akismet.Akismet, events.EventEmitter);
